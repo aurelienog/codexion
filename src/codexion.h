@@ -119,11 +119,9 @@ typedef struct s_coder
 typedef struct s_dongle
 {
 	pthread_mutex_t	mutex;
-
+	pthread_cond_t		cond;
+	t_request_heap		queue;
 	long long		release_time;
-
-	t_request		*waiting_queue;
-
 	int				is_available;
 }	t_dongle;
 
@@ -135,7 +133,15 @@ typedef struct s_request
 	t_coder		*coder;
 	long long	arrival_time;
 	long long	deadline;
+	size_t	order;
 }	t_request;
+
+typedef struct s_request_heap
+{
+	t_request	*data;
+	size_t		size;
+	size_t		capacity;
+}	t_request_heap;
 
 /**
 @brief Dedicated monitoring thread.
