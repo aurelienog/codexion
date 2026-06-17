@@ -92,6 +92,7 @@ typedef struct s_simulation
 	pthread_mutex_t	print_mutex;
 
 	int				termination_flag;
+	int				created_coders;
 }	t_simulation;
 
 /**
@@ -172,7 +173,7 @@ void			init_coders(t_simulation *simulation);
 /* ************************************************************************** */
 /*                                  Dongle                                    */
 /* ************************************************************************** */
-t_error				init_dongle(t_dongle *dongle, t_simulation *simulation);
-t_error				init_dongles(t_simulation *simulation);
+int				init_dongle(t_dongle *dongle, t_simulation *simulation);
+int				init_dongles(t_simulation *simulation);
 
 #endif
