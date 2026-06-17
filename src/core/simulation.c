@@ -14,19 +14,23 @@
 
 void	destroy_simulation(t_simulation *simulation)
 {
-// Destruir mutex globales.
-// Destruir mutex de cada dongle.
-// Liberar dongles.
-// Liberar coders.
-// Liberar simulation.
+	size_t	i;
+
+	if (!simulation)
+		return;
+
+	i = 0;
+	while (i < simulation->config.number_of_coders)
+	{
+		pthread_mutex_destroy(&simulation->dongles[i].mutex);
+		i++;
+	}
+	pthread_mutex_destroy(&simulation->print_mutex);
+	pthread_mutex_destroy(&simulation->simulation_mutex);
+	free(simulation->dongles);
+	free(simulation->coders);
+	free(simulation);
 }
-// Normalmente validarías:
-// cantidad exacta de argumentos;
-// que los numéricos sean enteros positivos;
-// que scheduler sea exactamente:
-// "fifo"
-// "edf"
-// y rechazarías cualquier otra cosa
 
 static t_error	init_simulation(t_simulation *simulation)
 {
@@ -39,8 +43,9 @@ static t_error	init_simulation(t_simulation *simulation)
 		pthread_mutex_destroy(&simulation->simulation_mutex);
 		return (ERROR_MUTEX);
 	}
+	simulation->created_coders = 0;
 	simulation->termination_flag = 0;
-	simulation->start_time = current_time_ms();
+	simulation->start_time = get_time_ms();
 	error = init_dongles(simulation);
 	if (error != ERROR_NONE)
 	{
@@ -98,7 +103,9 @@ t_simulation	*build_simulation(int argc, char **argv, t_error *error)
 	*error = init_simulation(simulation);
 	if (*error != ERROR_NONE)
 	{
-		destroy_simulation(simulation);
+		free(simulation->dongles);
+		free(simulation->coders);
+		free(simulation);
 		return (NULL);
 	}
 	return (simulation);
