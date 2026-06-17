@@ -16,9 +16,16 @@ t_error	init_dongle(t_dongle *dongle, t_simulation *simulation)
 {
 	dongle->is_available = 1;
 	dongle->release_time = simulation->start_time;
+	dongle->waiting_queue = NULL;
+	dongle->queue.size = 0;
+	dongle->queue.capacity = 0;
 	if (pthread_mutex_init(&dongle->mutex, NULL) != 0)
 		return (ERROR_MUTEX);
-	dongle->waiting_queue = NULL;
+	if (pthread_cond_init(&dongle->cond, NULL) != 0)
+	{
+		pthread_mutex_destroy(&dongle->mutex);
+		return (ERROR_MUTEX);
+	}
 	return (ERROR_NONE);
 }
 
@@ -36,6 +43,7 @@ t_error	init_dongles(t_simulation *simulation)
 			while (i > 0)
 			{
 				i--;
+				pthread_cond_destroy(&simulation->dongles[i].cond);
 				pthread_mutex_destroy(&simulation->dongles[i].mutex);
 			}
 			return (error);
