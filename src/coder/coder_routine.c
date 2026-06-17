@@ -11,3 +11,23 @@
 /* ************************************************************************** */
 
 #include "codexion.h"
+
+void* execute_routine(void *arg)
+{
+    t_coder *coder;
+    coder = (t_coder *)arg;
+    while (!simulation_finished(coder->simulation))
+    {
+        request_left_dongle();
+        request_right_dongle();
+
+        compile();
+
+        release_left();
+        release_right();
+
+        debug();
+
+        refactor();
+    }
+}
