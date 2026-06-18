@@ -33,20 +33,6 @@ t_error join_threads(t_monitor *monitor)
 	return (error);
 }
 
-void* watch(void *arg)
-{
-	t_monitor	*monitor;
-
-	monitor = (t_monitor*)arg;
-	while (!simulation_finished(monitor->simulation))
-	{
-		check_burnout(monitor->simulation);
-		check_completion(monitor->simulation);
-		usleep(500);
-	}
-	return (NULL);
-}
-
 t_error start_coders(t_simulation *simulation)
 {
 	size_t	i;
@@ -120,4 +106,3 @@ int	main(int argc, char **argv)
 	destroy_simulation(simulation);
 	return (error != ERROR_NONE);
 }
-// pthread_cond_broadcast(...)
