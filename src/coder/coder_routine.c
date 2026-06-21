@@ -12,11 +12,12 @@
 
 #include "codexion.h"
 
-void* execute_routine(void *arg)
+void* routine(void *arg)
 {
     t_coder *coder;
     coder = (t_coder *)arg;
-    while (!simulation_finished(coder->simulation))
+    while (!simulation_finished(coder->simulation)
+        && coder->compiles_count < coder->simulation->config.number_of_compiles_required)
     {
         request_left_dongle();
         request_right_dongle();
