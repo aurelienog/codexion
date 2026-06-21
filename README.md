@@ -25,3 +25,8 @@ https://code-vault.net/course/6q6s9eerd0:1609007479575
 - How to pass arguments to threads in C
 - Practical example for using threads
 - Condition variables in C
+- Signaling for condition variables (pthread_cond_signal vs pthread_cond_broadcast)
+
+Heap:
+- https://www.geeksforgeeks.org/c/heap-in-c/
+- https://www.youtube.com/watch?v=t0Cq6tVNRBA&t=494s
