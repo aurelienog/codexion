@@ -16,7 +16,7 @@ t_error	init_dongle(t_dongle *dongle, t_simulation *simulation)
 {
 	dongle->is_available = 1;
 	dongle->release_time = simulation->start_time;
-	dongle->queue = NULL;
+	dongle->queue.data = NULL;
 	dongle->queue.size = 0;
 	dongle->queue.capacity = 0;
 	if (pthread_mutex_init(&dongle->mutex, NULL) != 0)
