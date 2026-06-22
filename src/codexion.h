@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/15 11:39:55 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/16 14:50:53 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/22 15:44:50 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,16 +83,14 @@ typedef struct s_simulation
 {
 	t_coder			*coders;
 	t_dongle		*dongles;
-
 	t_configuration	config;
-
-	long long		start_time;
-
-	pthread_mutex_t	simulation_mutex;
+	t_scheduler		scheduler;
+	pthread_mutex_t	state_mutex;
 	pthread_mutex_t	print_mutex;
-
+	long long		start_time;
 	int				termination_flag;
 	int				created_coders;
+	int				request_counter;
 }	t_simulation;
 
 /**
@@ -119,9 +117,8 @@ typedef struct s_coder
 typedef struct s_dongle
 {
 	pthread_mutex_t	mutex;
-	pthread_cond_t		cond;
 	t_request_heap		queue;
-	long long		release_time;
+	long long	release_time;
 	int				is_available;
 }	t_dongle;
 
@@ -142,6 +139,13 @@ typedef struct s_request_heap
 	size_t		size;
 	size_t		capacity;
 }	t_request_heap;
+
+typedef struct s_scheduler
+{
+	pthread_mutex_t		mutex;
+	pthread_cond_t		cond;
+	t_scheduler_type	type;
+}	t_scheduler;
 
 /**
 @brief Dedicated monitoring thread.
