@@ -11,8 +11,7 @@
 /* ************************************************************************** */
 
 #include "codexion.h"
-//heapify según FIFO o EDF
-//request_has_priority
+
 static void	heapify_up(t_request_heap *heap, size_t index)
 {
 	size_t	parent;

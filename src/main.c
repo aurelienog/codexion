@@ -12,7 +12,7 @@
 
 #include "codexion.h"
 
-t_error	join_threads(t_monitor *monitor)
+static t_error	join_threads(t_monitor *monitor)
 {
 	size_t			i;
 	t_error			error;
@@ -32,7 +32,7 @@ t_error	join_threads(t_monitor *monitor)
 	return (error);
 }
 
-t_error	start_coders(t_simulation *simulation)
+static t_error	start_coders(t_simulation *simulation)
 {
 	size_t		i;
 
@@ -59,14 +59,14 @@ t_error	start_coders(t_simulation *simulation)
 	return (ERROR_NONE);
 }
 
-t_error	start_monitor(t_monitor *monitor)
+static t_error	start_monitor(t_monitor *monitor)
 {
 	if (pthread_create(&monitor->thread, NULL, &watch, (void *)monitor) != 0)
 		return (ERROR_THREAD);
 	return (ERROR_NONE);
 }
 
-t_error	run_app(t_simulation *simulation)
+static t_error	run_app(t_simulation *simulation)
 {
 	t_error		error;
 	t_monitor	monitor;
@@ -108,5 +108,6 @@ int	main(int argc, char **argv)
 	if (error != ERROR_NONE)
 		print_error(error);
 	destroy_simulation(simulation);
+	printf("\nend");
 	return (error != ERROR_NONE);
 }
