@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/15 11:39:55 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/22 15:44:50 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/23 15:20:50 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 # define CODEXION_H
 
 # include <pthread.h>
+# include <sys/time.h>
 # include <stdlib.h>
 # include <stdio.h>
 # include <limits.h>
@@ -84,13 +85,14 @@ typedef struct s_simulation
 	t_coder			*coders;
 	t_dongle		*dongles;
 	t_configuration	config;
-	t_scheduler		scheduler;
 	pthread_mutex_t	state_mutex;
 	pthread_mutex_t	print_mutex;
+	pthread_mutex_t	scheduler_mutex;
+	pthread_cond_t	scheduler_cond;
 	long long		start_time;
 	int				termination_flag;
 	int				created_coders;
-	int				request_counter;
+	size_t			request_counter;
 }	t_simulation;
 
 /**
@@ -103,6 +105,7 @@ typedef struct s_coder
 
 	t_simulation	*simulation;
 	pthread_t		thread;
+	pthread_mutex_t	mutex;
 
 	long long		last_compile_start;
 
@@ -117,8 +120,8 @@ typedef struct s_coder
 typedef struct s_dongle
 {
 	pthread_mutex_t	mutex;
-	t_request_heap		queue;
-	long long	release_time;
+	t_request_heap	queue;
+	long long		release_time;
 	int				is_available;
 }	t_dongle;
 
@@ -130,7 +133,7 @@ typedef struct s_request
 	t_coder		*coder;
 	long long	arrival_time;
 	long long	deadline;
-	size_t	order;
+	size_t		order;
 }	t_request;
 
 typedef struct s_request_heap
@@ -139,13 +142,6 @@ typedef struct s_request_heap
 	size_t		size;
 	size_t		capacity;
 }	t_request_heap;
-
-typedef struct s_scheduler
-{
-	pthread_mutex_t		mutex;
-	pthread_cond_t		cond;
-	t_scheduler_type	type;
-}	t_scheduler;
 
 /**
 @brief Dedicated monitoring thread.
@@ -169,21 +165,65 @@ t_configuration	create_config(char **argv);
 t_simulation	*build_simulation(int argc, char **argv, t_error *error);
 void			destroy_simulation(t_simulation *simulation);
 
+void			set_simulation_finished(t_simulation *simulation);
+int				simulation_finished(t_simulation *simulation);
+
+/* ************************************************************************** */
+/*                                  Monitor                                   */
+/* ************************************************************************** */
+
+void			check_burnout(t_simulation *simulation);
+void			check_completion(t_simulation *simulation);
+void			*watch(void *arg);
+
 /* ************************************************************************** */
 /*                                   Coder                                    */
 /* ************************************************************************** */
 
-void			init_coder(t_dongle *left_dongle,
-					t_dongle *right_dongle,
-					t_simulation *simulation,
-					size_t i);
+t_error			init_coders(t_simulation *simulation);
 
-void			init_coders(t_simulation *simulation);
+void			*routine(t_coder coder);
+
+void			request_compile(t_coder *coder);
+
+void			compile(t_coder *coder);
 
 /* ************************************************************************** */
 /*                                  Dongle                                    */
 /* ************************************************************************** */
-int				init_dongle(t_dongle *dongle, t_simulation *simulation);
-int				init_dongles(t_simulation *simulation);
 
+t_error			init_dongles(t_simulation *simulation);
+void			lock_both_dongles(t_coder *coder);
+void			unlock_both_dongles(t_coder *coder);
+void			take_dongles(t_coder *coder);
+void			release_dongles(t_coder *coder);
+
+/* ************************************************************************** */
+/*                                 Scheduler                                  */
+/* ************************************************************************** */
+
+int				request_has_priority(t_request *a, t_request *b);
+t_error			*enqueue_request(t_dongle *dongle, t_request *request);
+t_request		*dequeue_request(t_dongle *dongle);
+int				is_next(t_dongle *dongle, t_coder *coder);
+int				can_compile(t_coder *coder);
+
+/* ************************************************************************** */
+/*                                  Heap                                      */
+/* ************************************************************************** */
+
+t_request		*heap_peek(t_request_heap *heap);
+t_request		heap_pop(t_request_heap *heap);
+t_error			heap_push(t_request_heap *heap, t_request *request);
+t_error			heap_grow(t_request_heap *heap);
+void			swap(t_request *a, t_request *b);
+
+/* ************************************************************************** */
+/*                                  Utils                                     */
+/* ************************************************************************** */
+
+int				print_error(t_error *error);
+int				print_usage(void);
+t_error			parse_input(int argc, char **argv);
+long long			get_time_ms(void);
 #endif

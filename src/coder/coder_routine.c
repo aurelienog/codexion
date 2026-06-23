@@ -23,9 +23,9 @@ void	*routine(void *arg)
 		&& coder->compiles_count < required_compiles)
 	{
 		request_compile(coder);
-		compile();
-		release_dongles();
-		debug();
-		refactor();
+		compile(coder);
+		release_dongles(coder);
+		// debug();
+		// refactor();
 	}
 }

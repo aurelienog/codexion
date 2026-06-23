@@ -21,9 +21,9 @@ void	check_burnout(t_simulation *simulation)
 	i = 0;
 	while (i < simulation->config.number_of_coders)
 	{
-		pthread_mutex_lock(&simulation->state_mutex);
+		pthread_mutex_lock(&simulation->coders[i].mutex);
 		last_compile = simulation->coders[i].last_compile_start;
-		pthread_mutex_unlock(&simulation->state_mutex);
+		pthread_mutex_unlock(&simulation->coders[i].mutex);
 		elapsed = get_time_ms() - last_compile;
 		if (elapsed >= simulation->config.time_to_burnout)
 		{
@@ -43,9 +43,9 @@ void	check_completion(t_simulation *simulation)
 	i = 0;
 	while (i < simulation->config.number_of_coders)
 	{
-		pthread_mutex_lock(&simulation->state_mutex);
+		pthread_mutex_lock(&simulation->coders[i].mutex);
 		finished = simulation->coders[i].finished;
-		pthread_mutex_unlock(&simulation->state_mutex);
+		pthread_mutex_unlock(&simulation->coders[i].mutex);
 		if (!finished)
 			return ;
 		i++;

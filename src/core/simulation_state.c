@@ -18,9 +18,9 @@ void	set_simulation_finished(t_simulation *simulation)
 	if (!simulation->termination_flag)
 		simulation->termination_flag = 1;
 	pthread_mutex_unlock(&simulation->state_mutex);
-	pthread_mutex_lock(&simulation->scheduler.mutex);
-	pthread_cond_broadcast(&simulation->scheduler.cond);
-	pthread_mutex_lock(&simulation->scheduler.mutex);
+	pthread_mutex_lock(&simulation->scheduler_mutex);
+	pthread_cond_broadcast(&simulation->scheduler_cond);
+	pthread_mutex_lock(&simulation->scheduler_mutex);
 }
 
 int	simulation_finished(t_simulation *simulation)
