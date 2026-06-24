@@ -6,25 +6,17 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/16 10:51:20 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/23 14:05:31 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/24 13:34:25 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-static void	wait_for_turn(t_coder *coder)
-{
-	pthread_mutex_lock(&coder->simulation->scheduler_mutex);
-	while (!can_compile(coder) && !simulation_finished(coder->simulation))
-		pthread_cond_wait(&coder->simulation->scheduler_cond,
-			&coder->simulation->scheduler_mutex);
-	pthread_mutex_unlock(&coder->simulation->scheduler_mutex);
-}
-
 static t_request	create_request(t_coder *coder)
 {
 	t_request		request;
 	t_simulation	*simulation;
+	long long		last_compile;
 
 	simulation = coder->simulation;
 	request.coder = coder;
@@ -32,40 +24,68 @@ static t_request	create_request(t_coder *coder)
 	pthread_mutex_lock(&coder->simulation->state_mutex);
 	request.order = simulation->request_counter++;
 	pthread_mutex_unlock(&coder->simulation->state_mutex);
-	request.deadline = (coder->last_compile_start
-			+ simulation->config.time_to_burnout);
+	pthread_mutex_lock(&coder->mutex);
+	last_compile = coder->last_compile_start;
+	pthread_mutex_unlock(&coder->mutex);
+	request.deadline = (last_compile + simulation->config.time_to_burnout);
 	return (request);
 }
 
 void	request_compile(t_coder *coder)
 {
-	t_request	request;
+	t_request		request;
+	t_simulation	*simulation;
 
-	lock_both_dongles(coder);
+	simulation = coder->simulation;
 	request = create_request(coder);
-	enqueue_request(coder->left, &request);
-	enqueue_request(coder->right, &request);
+	pthread_mutex_lock(&simulation->scheduler_mutex);
+	lock_both_dongles(coder);
+	enqueue_request_locked(coder->left, &request);
+	enqueue_request_locked(coder->right, &request);
+	pthread_mutex_lock(&coder->simulation->print_mutex);
+	printf("coder: %d request time: %lld\n", request.coder->id, request.arrival_time); //print_status()
+	pthread_mutex_unlock(&coder->simulation->print_mutex);
 	unlock_both_dongles(coder);
-
-	wait_for_turn(coder);
-	take_dongles(coder);
-	dequeue_request(coder->left);
-	dequeue_request(coder->right);
+	while (!simulation_finished(coder->simulation))
+	{
+		lock_both_dongles(coder);
+		if (simulation_finished(simulation))
+		{
+			unlock_both_dongles(coder);
+			pthread_mutex_unlock(&simulation->scheduler_mutex);
+			return ;
+		}
+		if (can_compile_locked(coder))
+		{
+			take_dongles_locked(coder);
+			dequeue_request_locked(coder->left);
+			dequeue_request_locked(coder->right);
+			unlock_both_dongles(coder);
+			pthread_mutex_unlock(&simulation->scheduler_mutex);
+			return ;
+		}
+		unlock_both_dongles(coder);
+		pthread_cond_wait(&coder->simulation->scheduler_cond,
+			&coder->simulation->scheduler_mutex);
+	}
+	pthread_mutex_unlock(&coder->simulation->scheduler_mutex);
 }
 
 void	compile(t_coder *coder)
 {
+	if (simulation_finished(coder->simulation))
+		return ;
 	pthread_mutex_lock(&coder->mutex);
 	coder->last_compile_start = get_time_ms();
 	pthread_mutex_unlock(&coder->mutex);
 	pthread_mutex_lock(&coder->simulation->print_mutex);
-	print_status(coder, "is compiling");
+	printf("%d is compiling\n", coder->id); //print_status()
 	pthread_mutex_unlock(&coder->simulation->print_mutex);
-	pthread_mutex_lock(&coder->simulation->state_mutex);
 	usleep(coder->simulation->config.time_to_compile * 1000);
-	pthread_mutex_unlock(&coder->simulation->state_mutex);
 	pthread_mutex_lock(&coder->mutex);
 	coder->compiles_count++;
+	if (coder->compiles_count >= coder->simulation->config.number_of_compiles_required)
+		coder->finished = 1;
 	pthread_mutex_unlock(&coder->mutex);
 }
 //compile()
