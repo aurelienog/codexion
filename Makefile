@@ -1,20 +1,20 @@
-NAME = codexion.a
+NAME = codexion
 
 
 CC = cc
-CFLAGS = -Wall -Wextra -Werror -pthread
+CFLAGS = -Wall -Wextra -Werror -pthread -I src
 
 
-SRC = putnbr_hex.c ft_putnbr_fd.c ft_putstr_fd.c ft_strchr.c ft_putchar_fd.c ft_printf.c ft_unsigned_putnbr_fd.c print_address.c
+SRC = src/main.c src/coder/coder_actions.c src/coder/coder_init.c src/coder/coder_routine.c src/core/config.c src/core/simulation.c src/core/simulation_state.c src/dongle/dongle.c src/dongle/dongle_release.c src/dongle/dongle_acquire.c src/monitor/monitor.c src/monitor/monitor_checks.c src/scheduler/scheduler.c src/scheduler/request_heap.c src/scheduler/request_heap_utils.c src/utils/get_time_ms.c src/utils/parsing.c src/utils/errors.c
 OBJ = $(SRC:.c=.o)
 
 
 all: $(NAME)
 
 $(NAME): $(OBJ)
-	ar rcs $(NAME) $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) -o $(NAME)
 
-%.o: %.c codexion.h
+%.o: %.c src/codexion.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
