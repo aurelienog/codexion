@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/16 10:52:52 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/22 15:45:56 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/24 13:30:03 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 void	destroy_simulation(t_simulation *simulation)
 {
-	size_t	i;
+	int	i;
 
 	if (!simulation)
 		return ;
@@ -83,7 +83,6 @@ static t_error	init_simulation(t_simulation *simulation)
 		pthread_cond_destroy(&simulation->scheduler_cond);
 		return (error);
 	}
-	
 	return (ERROR_NONE);
 }
 
@@ -112,7 +111,6 @@ static t_simulation	*create_simulation(t_configuration config)
 	simulation->config = config;
 	simulation->dongles = dongles;
 	simulation->coders = coders;
-
 	return (simulation);
 }
 

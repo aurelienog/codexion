@@ -14,13 +14,19 @@
 
 void	set_simulation_finished(t_simulation *simulation)
 {
+	int	already_finished;
+
 	pthread_mutex_lock(&simulation->state_mutex);
-	if (!simulation->termination_flag)
+	already_finished = simulation->termination_flag;
+	if (!already_finished)
 		simulation->termination_flag = 1;
 	pthread_mutex_unlock(&simulation->state_mutex);
-	pthread_mutex_lock(&simulation->scheduler_mutex);
-	pthread_cond_broadcast(&simulation->scheduler_cond);
-	pthread_mutex_lock(&simulation->scheduler_mutex);
+	if (!already_finished)
+	{
+		pthread_mutex_lock(&simulation->scheduler_mutex);
+		pthread_cond_broadcast(&simulation->scheduler_cond);
+		pthread_mutex_unlock(&simulation->scheduler_mutex);
+	}
 }
 
 int	simulation_finished(t_simulation *simulation)

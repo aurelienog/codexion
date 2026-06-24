@@ -12,7 +12,7 @@
 
 #include "codexion.h"
 
-int	print_error(t_error *error)
+void	print_error(t_error error)
 {
 	if (error == ERROR_ARGC)
 		printf("Error: invalid number of arguments\n");
@@ -22,7 +22,7 @@ int	print_error(t_error *error)
 		printf("Error: invalid scheduler (fifo or edf only)\n");
 }
 
-int	print_usage(void)
+void	print_usage(void)
 {
 	printf("[INPUT ERROR]: the following arguments are mandatory:\n");
 	printf("- number_of_coder\n");
@@ -33,5 +33,4 @@ int	print_usage(void)
 	printf("- number_of_compiles_required\n");
 	printf("- dongle_cooldown\n");
 	printf("- scheduler [fifo || edf]\n");
-	return (1);
 }

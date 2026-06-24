@@ -12,12 +12,12 @@
 
 #include "codexion.h"
 
-t_error	*enqueue_request(t_dongle *dongle, t_request *request)
+t_error	enqueue_request_locked(t_dongle *dongle, t_request *request)
 {
 	return (heap_push(&dongle->queue, request));
 }
 
-t_request	dequeue_request(t_dongle *dongle)
+t_request	dequeue_request_locked(t_dongle *dongle)
 {
 	return (heap_pop(&dongle->queue));
 }
@@ -32,17 +32,15 @@ int	is_next(t_dongle *dongle, t_coder *coder)
 	return (top->coder == coder);
 }
 
-int	can_compile(t_coder *coder)
+int	can_compile_locked(t_coder *coder)
 {
 	int	result;
 
-	lock_both_dongles(coder);
 	result = (
 			coder->left->is_available
 			&& coder->right->is_available
 			&& is_next(coder->left, coder)
 			&& is_next(coder->right, coder)
 			);
-	unlock_both_dongles(coder);
 	return (result);
 }

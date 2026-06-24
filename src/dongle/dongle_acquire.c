@@ -50,13 +50,8 @@ void	unlock_both_dongles(t_coder *coder)
 	pthread_mutex_unlock(&second->mutex);
 }
 
-void	take_dongles(t_coder *coder)
+void	take_dongles_locked(t_coder *coder)
 {
-	lock_both_dongles(coder);
-	if (can_compile(coder))
-	{
-		coder->left->is_available = 0;
-		coder->right->is_available = 0;
-	}
-	unlock_both_dongles(coder);
+	coder->left->is_available = 0;
+	coder->right->is_available = 0;
 }

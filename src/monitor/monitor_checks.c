@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/22 10:41:33 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/22 10:45:03 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/24 13:28:33 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 void	check_burnout(t_simulation *simulation)
 {
-	size_t		i;
+	int			i;
 	long long	elapsed;
 	long long	last_compile;
 
@@ -28,6 +28,9 @@ void	check_burnout(t_simulation *simulation)
 		if (elapsed >= simulation->config.time_to_burnout)
 		{
 			set_simulation_finished(simulation);
+				pthread_mutex_lock(&simulation->print_mutex);
+				printf("coder: %d burned", simulation->coders[i].id);
+				pthread_mutex_unlock(&simulation->print_mutex);
 			return ;
 		}
 		i++;
@@ -37,7 +40,7 @@ void	check_burnout(t_simulation *simulation)
 
 void	check_completion(t_simulation *simulation)
 {
-	size_t	i;
+	int		i;
 	int		finished;
 
 	i = 0;

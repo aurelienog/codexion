@@ -17,6 +17,7 @@ void	*routine(void *arg)
 	t_coder	*coder;
 	int		required_compiles;
 
+	coder = (t_coder *)arg;
 	required_compiles = coder->simulation->config.number_of_compiles_required;
 	coder = (t_coder *)arg;
 	while (!simulation_finished(coder->simulation)
@@ -28,4 +29,5 @@ void	*routine(void *arg)
 		// debug();
 		// refactor();
 	}
+	return (NULL);
 }

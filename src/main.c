@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/16 11:05:19 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/22 11:15:31 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/24 13:27:24 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 static t_error	join_threads(t_monitor *monitor)
 {
-	size_t			i;
+	int				i;
 	t_error			error;
 	t_simulation	*simulation;
 
@@ -34,7 +34,7 @@ static t_error	join_threads(t_monitor *monitor)
 
 static t_error	start_coders(t_simulation *simulation)
 {
-	size_t		i;
+	int		i;
 
 	i = 0;
 	while (i < simulation->config.number_of_coders)

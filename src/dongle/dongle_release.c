@@ -14,11 +14,11 @@
 
 void	release_dongles(t_coder *coder)
 {
+	pthread_mutex_lock(&coder->simulation->scheduler_mutex);
 	lock_both_dongles(coder);
 	coder->left->is_available = 1;
 	coder->right->is_available = 1;
 	unlock_both_dongles(coder);
-	pthread_mutex_lock(&coder->simulation->scheduler_mutex);
 	pthread_cond_broadcast(&coder->simulation->scheduler_cond);
 	pthread_mutex_unlock(&coder->simulation->scheduler_mutex);
 }

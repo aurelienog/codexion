@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/15 11:39:55 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/23 15:20:50 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/24 13:36:06 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,8 @@
 # include <stdlib.h>
 # include <stdio.h>
 # include <limits.h>
+# include <unistd.h>
+# include <string.h>
 
 /* ************************************************************************** */
 /*                           Forward Declarations                             */
@@ -30,6 +32,7 @@ typedef struct s_simulation		t_simulation;
 typedef struct s_coder			t_coder;
 typedef struct s_dongle			t_dongle;
 typedef struct s_request		t_request;
+typedef struct s_request_heap	t_request_heap;
 typedef struct s_monitor		t_monitor;
 
 /* ************************************************************************** */
@@ -115,17 +118,6 @@ typedef struct s_coder
 }	t_coder;
 
 /**
-@brief Shared resource required by coders.
-*/
-typedef struct s_dongle
-{
-	pthread_mutex_t	mutex;
-	t_request_heap	queue;
-	long long		release_time;
-	int				is_available;
-}	t_dongle;
-
-/**
 @brief Pending request for a dongle.
 */
 typedef struct s_request
@@ -143,6 +135,16 @@ typedef struct s_request_heap
 	size_t		capacity;
 }	t_request_heap;
 
+/**
+@brief Shared resource required by coders.
+*/
+typedef struct s_dongle
+{
+	pthread_mutex_t	mutex;
+	t_request_heap	queue;
+	long long		release_time;
+	int				is_available;
+}	t_dongle;
 /**
 @brief Dedicated monitoring thread.
 */
@@ -182,7 +184,7 @@ void			*watch(void *arg);
 
 t_error			init_coders(t_simulation *simulation);
 
-void			*routine(t_coder coder);
+void			*routine(void *arg);
 
 void			request_compile(t_coder *coder);
 
@@ -195,7 +197,7 @@ void			compile(t_coder *coder);
 t_error			init_dongles(t_simulation *simulation);
 void			lock_both_dongles(t_coder *coder);
 void			unlock_both_dongles(t_coder *coder);
-void			take_dongles(t_coder *coder);
+void			take_dongles_locked(t_coder *coder);
 void			release_dongles(t_coder *coder);
 
 /* ************************************************************************** */
@@ -203,10 +205,10 @@ void			release_dongles(t_coder *coder);
 /* ************************************************************************** */
 
 int				request_has_priority(t_request *a, t_request *b);
-t_error			*enqueue_request(t_dongle *dongle, t_request *request);
-t_request		*dequeue_request(t_dongle *dongle);
+t_error			enqueue_request_locked(t_dongle *dongle, t_request *request);
+t_request		dequeue_request_locked(t_dongle *dongle);
 int				is_next(t_dongle *dongle, t_coder *coder);
-int				can_compile(t_coder *coder);
+int				can_compile_locked(t_coder *coder);
 
 /* ************************************************************************** */
 /*                                  Heap                                      */
@@ -219,11 +221,11 @@ t_error			heap_grow(t_request_heap *heap);
 void			swap(t_request *a, t_request *b);
 
 /* ************************************************************************** */
-/*                                  Utils                                     */
+/*                                  IO                                     */
 /* ************************************************************************** */
 
-int				print_error(t_error *error);
-int				print_usage(void);
+void			print_error(t_error error);
+void			print_usage(void);
 t_error			parse_input(int argc, char **argv);
-long long			get_time_ms(void);
+long long		get_time_ms(void);
 #endif
