@@ -27,25 +27,30 @@ void	*routine(void *arg)
 {
 	t_coder	*coder;
 	int		finished;
-	int		required_compiles;
 
 	coder = (t_coder *)arg;
 	if (coder->simulation->config.number_of_coders == 1)
     return (single_coder_routine(coder));
-	required_compiles = coder->simulation->config.number_of_compiles_required;
-	pthread_mutex_lock(&coder->mutex);
-	finished = coder->compiles_count >= required_compiles;
-	pthread_mutex_unlock(&coder->mutex);
-	while (!simulation_finished(coder->simulation)
-		&& !finished)
+
+	while (!simulation_finished(coder->simulation))
 	{
+		pthread_mutex_lock(&coder->mutex);
+		finished = coder->finished;
+		pthread_mutex_unlock(&coder->mutex);
+		if (finished)
+			break;
 		request_compile(coder);
 		if (simulation_finished(coder->simulation))
     	break;
 		compile(coder);
 		release_dongles(coder);
-		// debug();
-		// refactor();
+		pthread_mutex_lock(&coder->mutex);
+		finished = coder->finished;
+		pthread_mutex_unlock(&coder->mutex);
+		if (finished)
+			break;
+		debug(coder);
+		refactor(coder);
 	}
 	return (NULL);
 }

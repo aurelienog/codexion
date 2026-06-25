@@ -83,5 +83,17 @@ void	compile(t_coder *coder)
 		coder->finished = 1;
 	pthread_mutex_unlock(&coder->mutex);
 }
-// debug()
-// refactor()
+void debug(t_coder *coder)
+{
+	if (simulation_finished(coder->simulation))
+		return ;
+	print_status(coder, STATUS_DEBUGGING);
+	usleep(coder->simulation->config.time_to_debug * 1000);
+}
+void refactor(t_coder *coder)
+{
+	if (simulation_finished(coder->simulation))
+		return ;
+	print_status(coder, STATUS_REFACTORING);
+	usleep(coder->simulation->config.time_to_refactor * 1000);
+}

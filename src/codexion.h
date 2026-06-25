@@ -195,10 +195,10 @@ void			*watch(void *arg);
 t_error			init_coders(t_simulation *simulation);
 
 void			*routine(void *arg);
-
 void			request_compile(t_coder *coder);
-
 void			compile(t_coder *coder);
+void 			debug(t_coder *coder);
+void			refactor(t_coder *coder);
 
 /* ************************************************************************** */
 /*                                  Dongle                                    */

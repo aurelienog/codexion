@@ -108,6 +108,5 @@ int	main(int argc, char **argv)
 	if (error != ERROR_NONE)
 		print_error(error);
 	destroy_simulation(simulation);
-	printf("\nSimulation is over!");
 	return (error != ERROR_NONE);
 }
