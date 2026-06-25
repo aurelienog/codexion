@@ -18,6 +18,7 @@ static t_error	init_dongle(t_dongle *dongle)
 		return (ERROR_MUTEX);
 	dongle->is_available = 1;
 	dongle->release_time = 0;
+	dongle->cooldown_expired_notified = 0;
 	dongle->queue.data = NULL;
 	dongle->queue.size = 0;
 	dongle->queue.capacity = 0;

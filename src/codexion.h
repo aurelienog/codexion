@@ -153,6 +153,7 @@ typedef struct s_dongle
 	t_request_heap	queue;
 	long long		release_time;
 	int				is_available;
+	int				cooldown_expired_notified;
 }	t_dongle;
 /**
 @brief Dedicated monitoring thread.

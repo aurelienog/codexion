@@ -32,13 +32,22 @@ int	is_next(t_dongle *dongle, t_coder *coder)
 	return (top->coder == coder);
 }
 
+static int cooldown_expired(t_dongle *dongle, long long cooldown)
+{
+    return (get_time_ms() >= dongle->release_time + cooldown);
+}
+
 int	can_compile_locked(t_coder *coder)
 {
 	int	result;
+	long long	cooldown;
 
+	cooldown = coder->simulation->config.dongle_cooldown;
 	result = (
 			coder->left->is_available
 			&& coder->right->is_available
+			&& cooldown_expired(coder->left, cooldown)
+			&& cooldown_expired(coder->right, cooldown)
 			&& is_next(coder->left, coder)
 			&& is_next(coder->right, coder)
 			);
