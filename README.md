@@ -35,6 +35,12 @@ make
 ./codexion 5 800 200 100 150 3 50 edf
 ```
 
+### Other available rules:
+
+- make clean: removes object files
+- make fclean: removes object files and the executable
+- make re: recompiles the executable
+
 ## Simulation Rules
 
 Each coder requires two dongles to compile.
@@ -89,7 +95,7 @@ The simulation ends when:
 | refactor()    |                 | refactor()    |
 +-------+-------+                 +-------+-------+
         |                                 |
-        | needs two dongles              |
+        | needs two dongles               |
         +---------------+----------------+
                         |
                         v
@@ -147,12 +153,12 @@ A coder can start compiling only if:
 
 Formally:
 ```
-left available
-AND right available
-AND left cooldown expired
-AND right cooldown expired
-AND first in left queue
-AND first in right queue
+left dongle available
+AND right dongle available
+AND left dongle cooldown expired
+AND right dongle cooldown expired
+AND first in left dongle queue
+AND first in right dongle queue
 ```
 This guarantees fair resource acquisition while preventing race conditions.
 
@@ -286,3 +292,11 @@ Topics covered:
 
 - https://www.geeksforgeeks.org/c/heap-in-c/
 - https://www.youtube.com/watch?v=t0Cq6tVNRBA&t=494s
+
+### AI usage
+
+Artificial intelligence was used to assist with:
+
+- Architecture discussions
+- Documentation improvements
+- Code review assistance
