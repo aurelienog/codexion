@@ -73,12 +73,11 @@ t_request	heap_pop(t_request_heap *heap)
 	t_request	top;
 
 	top = heap->data[0];
-	heap->size -= 1;
-	if (heap->size > 0)
-	{
+	if (heap->size > 1)
 		heap->data[0] = heap->data[heap->size - 1];
+	heap->size--;
+	if (heap->size > 0)
 		heapify_down(heap, 0);
-	}
 	return (top);
 }
 
