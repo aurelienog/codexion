@@ -50,6 +50,15 @@ typedef enum e_error
 	ERROR_THREAD,
 }	t_error;
 
+typedef enum e_status
+{
+	STATUS_COMPILING,
+	STATUS_DEBUGGING,
+	STATUS_REFACTORING,
+	STATUS_TAKE_DONGLE,
+	STATUS_BURNED,
+	STATUS_FINISHED
+}	t_status;
 /**
 @brief Scheduling policy used to assign dongles.
 */
@@ -226,6 +235,7 @@ void			swap(t_request *a, t_request *b);
 
 void			print_error(t_error error);
 void			print_usage(void);
+void			print_status(t_coder *coder, t_status status);
 t_error			parse_input(int argc, char **argv);
 long long		get_time_ms(void);
 #endif

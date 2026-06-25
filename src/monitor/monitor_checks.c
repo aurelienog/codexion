@@ -28,9 +28,7 @@ void	check_burnout(t_simulation *simulation)
 		if (elapsed >= simulation->config.time_to_burnout)
 		{
 			set_simulation_finished(simulation);
-				pthread_mutex_lock(&simulation->print_mutex);
-				printf("coder: %d burned", simulation->coders[i].id);
-				pthread_mutex_unlock(&simulation->print_mutex);
+			print_status(&simulation->coders[i], STATUS_BURNED);
 			return ;
 		}
 		i++;

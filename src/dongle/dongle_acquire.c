@@ -54,4 +54,6 @@ void	take_dongles_locked(t_coder *coder)
 {
 	coder->left->is_available = 0;
 	coder->right->is_available = 0;
+	print_status(coder, STATUS_TAKE_DONGLE);
+	print_status(coder, STATUS_TAKE_DONGLE);
 }

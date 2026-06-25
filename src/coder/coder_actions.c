@@ -42,9 +42,6 @@ void	request_compile(t_coder *coder)
 	lock_both_dongles(coder);
 	enqueue_request_locked(coder->left, &request);
 	enqueue_request_locked(coder->right, &request);
-	pthread_mutex_lock(&coder->simulation->print_mutex);
-	printf("coder: %d request time: %lld\n", request.coder->id, request.arrival_time); //print_status()
-	pthread_mutex_unlock(&coder->simulation->print_mutex);
 	unlock_both_dongles(coder);
 	while (!simulation_finished(coder->simulation))
 	{
@@ -78,9 +75,7 @@ void	compile(t_coder *coder)
 	pthread_mutex_lock(&coder->mutex);
 	coder->last_compile_start = get_time_ms();
 	pthread_mutex_unlock(&coder->mutex);
-	pthread_mutex_lock(&coder->simulation->print_mutex);
-	printf("%d is compiling\n", coder->id); //print_status()
-	pthread_mutex_unlock(&coder->simulation->print_mutex);
+	print_status(coder, STATUS_COMPILING);
 	usleep(coder->simulation->config.time_to_compile * 1000);
 	pthread_mutex_lock(&coder->mutex);
 	coder->compiles_count++;
@@ -88,6 +83,5 @@ void	compile(t_coder *coder)
 		coder->finished = 1;
 	pthread_mutex_unlock(&coder->mutex);
 }
-//compile()
 // debug()
 // refactor()
