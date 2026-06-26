@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/22 10:59:31 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/23 14:09:42 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/26 12:29:44 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,14 +32,14 @@ int	is_next(t_dongle *dongle, t_coder *coder)
 	return (top->coder == coder);
 }
 
-static int cooldown_expired(t_dongle *dongle, long long cooldown)
+static int	cooldown_expired(t_dongle *dongle, long long cooldown)
 {
-    return (get_time_ms() >= dongle->release_time + cooldown);
+	return (get_time_ms() >= dongle->release_time + cooldown);
 }
 
 int	can_compile_locked(t_coder *coder)
 {
-	int	result;
+	int			result;
 	long long	cooldown;
 
 	cooldown = coder->simulation->config.dongle_cooldown;

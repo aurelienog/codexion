@@ -6,40 +6,14 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/16 10:52:52 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/24 13:30:03 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/26 12:47:48 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-void	destroy_simulation(t_simulation *simulation)
+static t_error	init_mutexes(t_simulation *simulation)
 {
-	int	i;
-
-	if (!simulation)
-		return ;
-	i = 0;
-	while (i < simulation->config.number_of_coders)
-	{
-		free(simulation->dongles[i].queue.data);
-		// pthread_cond_destroy(&simulation->dongles[i].cond);
-		pthread_mutex_destroy(&simulation->dongles[i].mutex);
-		pthread_mutex_destroy(&simulation->coders[i].mutex);
-		i++;
-	}
-	pthread_mutex_destroy(&simulation->print_mutex);
-	pthread_mutex_destroy(&simulation->state_mutex);
-	pthread_mutex_destroy(&simulation->scheduler_mutex);
-	pthread_cond_destroy(&simulation->scheduler_cond);
-	free(simulation->dongles);
-	free(simulation->coders);
-	free(simulation);
-}
-
-static t_error	init_simulation(t_simulation *simulation)
-{
-	t_error	error;
-
 	if (pthread_cond_init(&simulation->scheduler_cond, NULL) != 0)
 		return (ERROR_MUTEX);
 	if (pthread_mutex_init(&simulation->state_mutex, NULL) != 0)
@@ -64,23 +38,41 @@ static t_error	init_simulation(t_simulation *simulation)
 	simulation->request_counter = 0;
 	simulation->termination_flag = 0;
 	simulation->start_time = get_time_ms();
+	return (ERROR_NONE);
+}
+
+static void	destroy_mutexes(t_simulation *simulation)
+{
+	pthread_mutex_destroy(&simulation->print_mutex);
+	pthread_mutex_destroy(&simulation->state_mutex);
+	pthread_mutex_destroy(&simulation->scheduler_mutex);
+	pthread_cond_destroy(&simulation->scheduler_cond);
+}
+
+static t_error	init_simulation(t_simulation *simulation)
+{
+	t_error	error;
+	int		i;
+
+	error = init_mutexes(simulation);
+	if (error != ERROR_NONE)
+		return (error);
 	error = init_dongles(simulation);
 	if (error != ERROR_NONE)
 	{
-		pthread_mutex_destroy(&simulation->print_mutex);
-		pthread_mutex_destroy(&simulation->state_mutex);
-		pthread_mutex_destroy(&simulation->scheduler_mutex);
-		pthread_cond_destroy(&simulation->scheduler_cond);
+		destroy_mutexes(simulation);
 		return (error);
 	}
 	error = init_coders(simulation);
 	if (error != ERROR_NONE)
 	{
-		//destroy all dongles mutex
-		pthread_mutex_destroy(&simulation->print_mutex);
-		pthread_mutex_destroy(&simulation->state_mutex);
-		pthread_mutex_destroy(&simulation->scheduler_mutex);
-		pthread_cond_destroy(&simulation->scheduler_cond);
+		i = 0;
+		while (i < simulation->config.number_of_coders)
+		{
+			pthread_mutex_destroy(&simulation->dongles[i].mutex);
+			i++;
+		}
+		destroy_mutexes(simulation);
 		return (error);
 	}
 	return (ERROR_NONE);

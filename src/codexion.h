@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/15 11:39:55 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/24 13:36:06 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/26 12:22:56 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -197,7 +197,7 @@ t_error			init_coders(t_simulation *simulation);
 void			*routine(void *arg);
 void			request_compile(t_coder *coder);
 void			compile(t_coder *coder);
-void 			debug(t_coder *coder);
+void			debug(t_coder *coder);
 void			refactor(t_coder *coder);
 
 /* ************************************************************************** */
