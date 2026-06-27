@@ -12,32 +12,53 @@
 
 #include "codexion.h"
 
-static int	cooldown_may_have_expired(t_simulation *simulation)
+static void	check_burnout(t_simulation *simulation)
 {
 	int			i;
-	long long	now;
-	int			changed;
-	t_dongle	*dongle;
+	int			finished;
+	long long	elapsed;
+	long long	last_compile;
 
-	now = get_time_ms();
-	changed = 0;
 	i = 0;
 	while (i < simulation->config.number_of_coders)
 	{
-		dongle = &simulation->dongles[i];
-		pthread_mutex_lock(&dongle->mutex);
-		if (dongle->release_time != 0
-			&& !dongle->cooldown_expired_notified
-			&& now >= dongle->release_time
-			+ simulation->config.dongle_cooldown)
+		pthread_mutex_lock(&simulation->coders[i].mutex);
+		finished = simulation->coders[i].finished;
+		last_compile = simulation->coders[i].last_compile_start;
+		pthread_mutex_unlock(&simulation->coders[i].mutex);
+		if (finished)
 		{
-			dongle->cooldown_expired_notified = 1;
-			changed = 1;
+			i++;
+			continue ;
 		}
-		pthread_mutex_unlock(&dongle->mutex);
+		elapsed = get_time_ms() - last_compile;
+		if (elapsed >= simulation->config.time_to_burnout)
+		{
+			set_simulation_finished(simulation);
+			print_status(&simulation->coders[i], STATUS_BURNED);
+			return ;
+		}
 		i++;
 	}
-	return (changed);
+	return ;
+}
+
+static void	check_completion(t_simulation *simulation)
+{
+	int		i;
+	int		finished;
+
+	i = 0;
+	while (i < simulation->config.number_of_coders)
+	{
+		pthread_mutex_lock(&simulation->coders[i].mutex);
+		finished = simulation->coders[i].finished;
+		pthread_mutex_unlock(&simulation->coders[i].mutex);
+		if (!finished)
+			return ;
+		i++;
+	}
+	set_simulation_finished(simulation);
 }
 
 void	*watch(void *arg)
@@ -51,13 +72,7 @@ void	*watch(void *arg)
 	{
 		check_burnout(simulation);
 		check_completion(simulation);
-		if (cooldown_may_have_expired(simulation))
-		{
-			pthread_mutex_lock(&simulation->scheduler_mutex);
-			pthread_cond_broadcast(&simulation->scheduler_cond);
-			pthread_mutex_unlock(&simulation->scheduler_mutex);
-		}
-		usleep(500);
+		usleep(900);
 	}
 	return (NULL);
 }
