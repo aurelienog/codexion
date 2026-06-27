@@ -89,43 +89,11 @@ typedef struct s_configuration
 	t_scheduler_type	scheduler;
 }	t_configuration;
 
-/**
-@brief Global simulation state.
-*/
-typedef struct s_simulation
+typedef struct s_scheduler
 {
-	t_coder			*coders;
-	t_dongle		*dongles;
-	t_configuration	config;
-	pthread_mutex_t	state_mutex;
-	pthread_mutex_t	print_mutex;
-	pthread_mutex_t	scheduler_mutex;
-	pthread_cond_t	scheduler_cond;
-	long long		start_time;
-	int				termination_flag;
-	int				created_coders;
-	size_t			request_counter;
-}	t_simulation;
-
-/**
-@brief Represents a coder participating in the simulation.
-*/
-typedef struct s_coder
-{
-	t_dongle		*left;
-	t_dongle		*right;
-
 	t_simulation	*simulation;
-	pthread_t		thread;
-	pthread_mutex_t	mutex;
-
-	long long		last_compile_start;
-
-	int				id;
-	int				compiles_count;
-	int				finished;
-}	t_coder;
-
+	pthread_t			thread;
+}	t_scheduler;
 /**
 @brief Pending request for a dongle.
 */
@@ -145,13 +113,53 @@ typedef struct s_request_heap
 }	t_request_heap;
 
 /**
+@brief Global simulation state.
+*/
+typedef struct s_simulation
+{
+	t_coder			*coders;
+	t_dongle		*dongles;
+	t_configuration	config;
+	pthread_mutex_t	state_mutex;
+	pthread_mutex_t	print_mutex;
+	pthread_mutex_t	scheduler_mutex;
+	pthread_cond_t	scheduler_cond;
+	t_request_heap	request_heap;
+	t_request		*pending;
+	long long		start_time;
+	int				*reserved;
+	int				termination_flag;
+	int				created_coders;
+	size_t			request_counter;
+}	t_simulation;
+
+/**
+@brief Represents a coder participating in the simulation.
+*/
+typedef struct s_coder
+{
+	t_dongle		*left;
+	t_dongle		*right;
+
+	t_simulation	*simulation;
+	pthread_t		thread;
+	pthread_mutex_t	mutex;
+	long long		last_compile_start;
+	int				id;
+	int				waiting_for_compile;
+	int				permission_to_compile;
+	int				compiles_count;
+	int				finished;
+}	t_coder;
+
+/**
 @brief Shared resource required by coders.
 */
 typedef struct s_dongle
 {
 	pthread_mutex_t	mutex;
-	t_request_heap	queue;
 	long long		release_time;
+	int				id;
 	int				is_available;
 	int				cooldown_expired_notified;
 }	t_dongle;
@@ -179,13 +187,13 @@ void			destroy_simulation(t_simulation *simulation);
 
 void			set_simulation_finished(t_simulation *simulation);
 int				simulation_finished(t_simulation *simulation);
+t_error	run_app(t_simulation *simulation);
+void		*scheduler_routine(void *arg);
 
 /* ************************************************************************** */
 /*                                  Monitor                                   */
 /* ************************************************************************** */
 
-void			check_burnout(t_simulation *simulation);
-void			check_completion(t_simulation *simulation);
 void			*watch(void *arg);
 
 /* ************************************************************************** */
@@ -207,7 +215,7 @@ void			refactor(t_coder *coder);
 t_error			init_dongles(t_simulation *simulation);
 void			lock_both_dongles(t_coder *coder);
 void			unlock_both_dongles(t_coder *coder);
-void			take_dongles_locked(t_coder *coder);
+void			take_dongles(t_coder *coder);
 void			release_dongles(t_coder *coder);
 
 /* ************************************************************************** */
@@ -215,10 +223,8 @@ void			release_dongles(t_coder *coder);
 /* ************************************************************************** */
 
 int				request_has_priority(t_request *a, t_request *b);
-t_error			enqueue_request_locked(t_dongle *dongle, t_request *request);
-t_request		dequeue_request_locked(t_dongle *dongle);
-int				is_next(t_dongle *dongle, t_coder *coder);
-int				can_compile_locked(t_coder *coder);
+t_error		scheduler_enqueue(t_coder *coder);
+void			scheduler_run(t_simulation *simulation);
 
 /* ************************************************************************** */
 /*                                  Heap                                      */

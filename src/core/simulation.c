@@ -75,6 +75,9 @@ static t_error	init_simulation(t_simulation *simulation)
 		destroy_mutexes(simulation);
 		return (error);
 	}
+	simulation->request_heap.data = NULL;
+	simulation->request_heap.size = 0;
+	simulation->request_heap.capacity = 0;
 	return (ERROR_NONE);
 }
 
@@ -90,6 +93,8 @@ static t_simulation	*create_simulation(t_configuration config)
 		return (NULL);
 	simulation->coders = NULL;
 	simulation->dongles = NULL;
+	simulation->pending = NULL;
+	simulation->reserved = NULL;
 	coders_number = config.number_of_coders;
 	coders = malloc(coders_number * sizeof(t_coder));
 	if (!coders)
@@ -100,6 +105,10 @@ static t_simulation	*create_simulation(t_configuration config)
 	dongles = malloc(coders_number * sizeof(t_dongle));
 	if (!dongles)
 		return (free(coders), free(simulation), NULL);
+	simulation->pending = malloc(sizeof(t_request) * coders_number);
+	// if (simulation->pending)
+	simulation->reserved = malloc(sizeof(int) * coders_number);
+	// if (!simulation->reserved)
 	simulation->config = config;
 	simulation->dongles = dongles;
 	simulation->coders = coders;
@@ -125,7 +134,9 @@ t_simulation	*build_simulation(int argc, char **argv, t_error *error)
 	if (*error != ERROR_NONE)
 	{
 		free(simulation->dongles);
-		free(simulation->coders);
+		free(simulation->coders);		
+		free(simulation->pending);
+		free(simulation->reserved);
 		free(simulation);
 		return (NULL);
 	}

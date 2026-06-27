@@ -21,7 +21,6 @@ void	destroy_simulation(t_simulation *simulation)
 	i = 0;
 	while (i < simulation->config.number_of_coders)
 	{
-		free(simulation->dongles[i].queue.data);
 		pthread_mutex_destroy(&simulation->dongles[i].mutex);
 		pthread_mutex_destroy(&simulation->coders[i].mutex);
 		i++;
@@ -30,6 +29,9 @@ void	destroy_simulation(t_simulation *simulation)
 	pthread_mutex_destroy(&simulation->state_mutex);
 	pthread_mutex_destroy(&simulation->scheduler_mutex);
 	pthread_cond_destroy(&simulation->scheduler_cond);
+	free(simulation->request_heap.data);
+	free(simulation->pending);
+	free(simulation->reserved);
 	free(simulation->dongles);
 	free(simulation->coders);
 	free(simulation);
