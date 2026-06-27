@@ -18,12 +18,13 @@ static t_error	init_coder(t_dongle *left_dongle,
 		size_t i)
 {
 	t_coder	*coder;
-
 	coder = &simulation->coders[i];
 	if (pthread_mutex_init(&coder->mutex, NULL) != 0)
 		return (ERROR_MUTEX);
 	coder = &simulation->coders[i];
 	coder->id = i + 1;
+	coder->permission_to_compile = 0;
+	coder->waiting_for_compile = 0;
 	coder->compiles_count = 0;
 	coder->last_compile_start = get_time_ms();
 	coder->finished = 0;

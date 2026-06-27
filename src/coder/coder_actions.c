@@ -12,11 +12,28 @@
 
 #include "codexion.h"
 
+void	request_compile(t_coder *coder)
+{	
+	t_simulation	*simulation;
+
+	simulation = coder->simulation;
+	pthread_mutex_lock(&simulation->scheduler_mutex);
+	scheduler_enqueue(coder);
+	while (!coder->permission_to_compile
+		&& !simulation_finished(coder->simulation))
+	{
+		pthread_cond_wait(&coder->simulation->scheduler_cond,
+			&coder->simulation->scheduler_mutex);
+	}
+	pthread_mutex_unlock(&coder->simulation->scheduler_mutex);
+}
+
 void	compile(t_coder *coder)
 {
 	if (simulation_finished(coder->simulation))
 		return ;
 	pthread_mutex_lock(&coder->mutex);
+	coder->permission_to_compile = 0;
 	coder->last_compile_start = get_time_ms();
 	pthread_mutex_unlock(&coder->mutex);
 	print_status(coder, STATUS_COMPILING);

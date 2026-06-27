@@ -23,30 +23,40 @@ static void	*single_coder_routine(void *arg)
 	return (NULL);
 }
 
+static int	has_finished(t_coder *coder)
+{
+	int	finished;
+
+	pthread_mutex_lock(&coder->mutex);
+	finished = coder->finished;
+	pthread_mutex_unlock(&coder->mutex);
+	return (finished);
+}
+
+static void	release_compilation_resources(t_coder *coder)
+{
+	pthread_mutex_lock(&coder->simulation->scheduler_mutex);
+	release_dongles(coder);
+	pthread_mutex_unlock(&coder->simulation->scheduler_mutex);
+}
+
 void	*routine(void *arg)
 {
 	t_coder	*coder;
-	int			finished;
 
 	coder = (t_coder *)arg;
 	if (coder->simulation->config.number_of_coders == 1)
 		return (single_coder_routine(coder));
 	while (!simulation_finished(coder->simulation))
 	{
-		pthread_mutex_lock(&coder->mutex);
-		finished = coder->finished;
-		pthread_mutex_unlock(&coder->mutex);
-		if (finished)
+		if (has_finished(coder))
 			break ;
 		request_compile(coder);
 		if (simulation_finished(coder->simulation))
 			break ;
 		compile(coder);
-		release_dongles(coder);
-		pthread_mutex_lock(&coder->mutex);
-		finished = coder->finished;
-		pthread_mutex_unlock(&coder->mutex);
-		if (finished)
+		release_compilation_resources(coder);
+		if (has_finished(coder))
 			break ;
 		debug(coder);
 		refactor(coder);
