@@ -50,10 +50,28 @@ void	unlock_both_dongles(t_coder *coder)
 	pthread_mutex_unlock(&second->mutex);
 }
 
-void	take_dongles_locked(t_coder *coder)
+void	take_dongles(t_coder *coder)
 {
+	lock_both_dongles(coder);
 	coder->left->is_available = 0;
 	coder->right->is_available = 0;
 	print_status(coder, STATUS_TAKE_DONGLE);
 	print_status(coder, STATUS_TAKE_DONGLE);
+	unlock_both_dongles(coder);
 }
+
+void	release_dongles(t_coder *coder)
+{
+	long long	now;
+
+	now = get_time_ms();
+	lock_both_dongles(coder);
+	coder->left->is_available = 1;
+	coder->left->cooldown_expired_notified = 0;
+	coder->left->release_time = now;
+	coder->right->is_available = 1;
+	coder->right->cooldown_expired_notified = 0;
+	coder->right->release_time = now;
+	unlock_both_dongles(coder);
+}
+
