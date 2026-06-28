@@ -1,11 +1,11 @@
 #include "codexion.h"
 
-static t_error	start_scheduler(t_scheduler *scheduler)
+static t_error	start_scheduler(t_simulation *simulation)
 {
-	if (pthread_create(&scheduler->thread,
+	if (pthread_create(&simulation->scheduler.thread,
 			NULL,
 			&scheduler_routine,
-			scheduler) != 0)
+			simulation) != 0)
 		return (ERROR_THREAD);
 	return (ERROR_NONE);
 }
@@ -71,12 +71,10 @@ t_error	run_app(t_simulation *simulation)
 {
 	t_error		error;
 	t_monitor	monitor;
-	t_scheduler scheduler;
 	size_t		i;
 
 	monitor.simulation = simulation;
-	scheduler.simulation = simulation;
-	error = start_scheduler(&scheduler);
+	error = start_scheduler(simulation);
 	if (error != ERROR_NONE)
 		return (error);
 	error = start_coders(simulation);
@@ -85,7 +83,7 @@ t_error	run_app(t_simulation *simulation)
 		pthread_mutex_lock(&simulation->state_mutex);
 		simulation->termination_flag = 1;
 		pthread_mutex_unlock(&simulation->state_mutex);
-		pthread_join(scheduler.thread, NULL);
+		pthread_join(simulation->scheduler.thread, NULL);
 		return (error);
 	}
 	error = start_monitor(&monitor);
@@ -99,5 +97,5 @@ t_error	run_app(t_simulation *simulation)
 			pthread_join(simulation->coders[--i].thread, NULL);
 		return (error);
 	}
-	return (join_threads(&monitor, &scheduler));
+	return (join_threads(&monitor, &simulation->scheduler));
 }

@@ -14,8 +14,8 @@
 
 static void	grant_permission(t_simulation *simulation, t_coder *coder)
 {
-	simulation->reserved[coder->left->id - 1] = 1;
-	simulation->reserved[coder->right->id - 1] = 1;
+	simulation->scheduler.reserved[coder->left->id - 1] = 1;
+	simulation->scheduler.reserved[coder->right->id - 1] = 1;
 	take_dongles(coder);
 	pthread_mutex_lock(&coder->mutex);
 	coder->waiting_for_compile = 0;
@@ -59,10 +59,10 @@ static void	process_request(t_simulation *simulation, t_request request, size_t 
 	pthread_mutex_unlock(&coder->mutex);
 	if (permission)
 		return ;
-	if (can_schedule(coder, simulation->reserved))
+	if (can_schedule(coder, simulation->scheduler.reserved))
 		grant_permission(simulation, coder);
 	else
-		simulation->pending[(*rejected)++] = request;
+		simulation->scheduler.pending[(*rejected)++] = request;
 }
 
 t_error	scheduler_enqueue(t_coder *coder)
@@ -82,8 +82,8 @@ t_error	scheduler_enqueue(t_coder *coder)
 	coder->waiting_for_compile = 1;
 	request.deadline = coder->last_compile_start + simulation->config.time_to_burnout;
 	pthread_mutex_unlock(&coder->mutex);
-	request.order = simulation->request_counter++;
-	return (heap_push(&simulation->request_heap, &request));
+	request.order = simulation->scheduler.request_counter++;
+	return (heap_push(&simulation->scheduler.request_heap, &request));
 }
 
 void	scheduler_run(t_simulation *simulation)
@@ -92,8 +92,8 @@ void	scheduler_run(t_simulation *simulation)
 	size_t	rejected_count;
 	size_t	i;
 
-	heap = &simulation->request_heap;
-	memset(simulation->reserved, 0,
+	heap = &simulation->scheduler.request_heap;
+	memset(simulation->scheduler.reserved, 0,
 		sizeof(int) * simulation->config.number_of_coders);
 	rejected_count = 0;
 	while (heap->size > 0)
@@ -101,24 +101,22 @@ void	scheduler_run(t_simulation *simulation)
 	i = 0;
 	while (i < rejected_count)
 	{
-		heap_push(heap, &simulation->pending[i]);
+		heap_push(heap, &simulation->scheduler.pending[i]);
 		i++;
 	}
-	pthread_cond_broadcast(&simulation->scheduler_cond);
+	pthread_cond_broadcast(&simulation->scheduler.scheduler_cond);
 }
 
 void	*scheduler_routine(void *arg)
 {
-	t_scheduler		*scheduler;
 	t_simulation	*simulation;
 
-	scheduler = arg;
-	simulation = scheduler->simulation;
+	simulation = (t_simulation *)arg;
 	while (!simulation_finished(simulation))
 	{
-		pthread_mutex_lock(&simulation->scheduler_mutex);
+		pthread_mutex_lock(&simulation->scheduler.scheduler_mutex);
 		scheduler_run(simulation);
-		pthread_mutex_unlock(&simulation->scheduler_mutex);
+		pthread_mutex_unlock(&simulation->scheduler.scheduler_mutex);
 		usleep(1500);
 	}
 	return (NULL);

@@ -89,11 +89,6 @@ typedef struct s_configuration
 	t_scheduler_type	scheduler;
 }	t_configuration;
 
-typedef struct s_scheduler
-{
-	t_simulation	*simulation;
-	pthread_t			thread;
-}	t_scheduler;
 /**
 @brief Pending request for a dongle.
 */
@@ -112,6 +107,16 @@ typedef struct s_request_heap
 	size_t		capacity;
 }	t_request_heap;
 
+typedef struct s_scheduler
+{
+	t_request_heap	request_heap;
+	t_request		*pending;
+	pthread_mutex_t	scheduler_mutex;
+	pthread_cond_t	scheduler_cond;
+	pthread_t			thread;
+	int				*reserved;
+	size_t			request_counter;
+}	t_scheduler;
 /**
 @brief Global simulation state.
 */
@@ -120,17 +125,13 @@ typedef struct s_simulation
 	t_coder			*coders;
 	t_dongle		*dongles;
 	t_configuration	config;
+	t_scheduler	scheduler;
 	pthread_mutex_t	state_mutex;
 	pthread_mutex_t	print_mutex;
-	pthread_mutex_t	scheduler_mutex;
-	pthread_cond_t	scheduler_cond;
-	t_request_heap	request_heap;
-	t_request		*pending;
 	long long		start_time;
-	int				*reserved;
 	int				termination_flag;
 	int				created_coders;
-	size_t			request_counter;
+
 }	t_simulation;
 
 /**
