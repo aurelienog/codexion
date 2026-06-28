@@ -61,13 +61,11 @@ static void	check_completion(t_simulation *simulation)
 	set_simulation_finished(simulation);
 }
 
-void	*watch(void *arg)
+void	*monitor_routine(void *arg)
 {
-	t_monitor		*monitor;
 	t_simulation	*simulation;
 
-	monitor = (t_monitor *)arg;
-	simulation = monitor->simulation;
+	simulation = (t_simulation *)arg;
 	while (!simulation_finished(simulation))
 	{
 		check_burnout(simulation);

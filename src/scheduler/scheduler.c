@@ -104,7 +104,7 @@ void	scheduler_run(t_simulation *simulation)
 		heap_push(heap, &simulation->scheduler.pending[i]);
 		i++;
 	}
-	pthread_cond_broadcast(&simulation->scheduler.scheduler_cond);
+	pthread_cond_broadcast(&simulation->scheduler.cond);
 }
 
 void	*scheduler_routine(void *arg)
@@ -114,9 +114,9 @@ void	*scheduler_routine(void *arg)
 	simulation = (t_simulation *)arg;
 	while (!simulation_finished(simulation))
 	{
-		pthread_mutex_lock(&simulation->scheduler.scheduler_mutex);
+		pthread_mutex_lock(&simulation->scheduler.mutex);
 		scheduler_run(simulation);
-		pthread_mutex_unlock(&simulation->scheduler.scheduler_mutex);
+		pthread_mutex_unlock(&simulation->scheduler.mutex);
 		usleep(1500);
 	}
 	return (NULL);

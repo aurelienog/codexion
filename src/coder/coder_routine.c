@@ -35,12 +35,12 @@ static int	has_finished(t_coder *coder)
 
 static void	release_compilation_resources(t_coder *coder)
 {
-	pthread_mutex_lock(&coder->simulation->scheduler.scheduler_mutex);
+	pthread_mutex_lock(&coder->simulation->scheduler.mutex);
 	release_dongles(coder);
-	pthread_mutex_unlock(&coder->simulation->scheduler.scheduler_mutex);
+	pthread_mutex_unlock(&coder->simulation->scheduler.mutex);
 }
 
-void	*routine(void *arg)
+void	*coder_routine(void *arg)
 {
 	t_coder	*coder;
 

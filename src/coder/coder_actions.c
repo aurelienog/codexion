@@ -17,15 +17,15 @@ void	request_compile(t_coder *coder)
 	t_simulation	*simulation;
 
 	simulation = coder->simulation;
-	pthread_mutex_lock(&simulation->scheduler.scheduler_mutex);
+	pthread_mutex_lock(&simulation->scheduler.mutex);
 	scheduler_enqueue(coder);
 	while (!coder->permission_to_compile
 		&& !simulation_finished(coder->simulation))
 	{
-		pthread_cond_wait(&coder->simulation->scheduler.scheduler_cond,
-			&coder->simulation->scheduler.scheduler_mutex);
+		pthread_cond_wait(&coder->simulation->scheduler.cond,
+			&coder->simulation->scheduler.mutex);
 	}
-	pthread_mutex_unlock(&coder->simulation->scheduler.scheduler_mutex);
+	pthread_mutex_unlock(&coder->simulation->scheduler.mutex);
 }
 
 void	compile(t_coder *coder)

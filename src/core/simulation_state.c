@@ -27,8 +27,8 @@ void	destroy_simulation(t_simulation *simulation)
 	}
 	pthread_mutex_destroy(&simulation->print_mutex);
 	pthread_mutex_destroy(&simulation->state_mutex);
-	pthread_mutex_destroy(&simulation->scheduler.scheduler_mutex);
-	pthread_cond_destroy(&simulation->scheduler.scheduler_cond);
+	pthread_mutex_destroy(&simulation->scheduler.mutex);
+	pthread_cond_destroy(&simulation->scheduler.cond);
 	free(simulation->scheduler.request_heap.data);
 	free(simulation->scheduler.pending);
 	free(simulation->scheduler.reserved);
@@ -48,9 +48,9 @@ void	set_simulation_finished(t_simulation *simulation)
 	pthread_mutex_unlock(&simulation->state_mutex);
 	if (!already_finished)
 	{
-		pthread_mutex_lock(&simulation->scheduler.scheduler_mutex);
-		pthread_cond_broadcast(&simulation->scheduler.scheduler_cond);
-		pthread_mutex_unlock(&simulation->scheduler.scheduler_mutex);
+		pthread_mutex_lock(&simulation->scheduler.mutex);
+		pthread_cond_broadcast(&simulation->scheduler.cond);
+		pthread_mutex_unlock(&simulation->scheduler.mutex);
 	}
 }
 

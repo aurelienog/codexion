@@ -39,6 +39,9 @@ typedef struct s_monitor		t_monitor;
 /*                                  Enums                                     */
 /* ************************************************************************** */
 
+/**
+ * @brief Error codes returned by the application.
+ */
 typedef enum e_error
 {
 	ERROR_NONE,
@@ -50,6 +53,9 @@ typedef enum e_error
 	ERROR_THREAD,
 }	t_error;
 
+/**
+ * @brief Status values used for coder state messages.
+ */
 typedef enum e_status
 {
 	STATUS_COMPILING,
@@ -59,9 +65,10 @@ typedef enum e_status
 	STATUS_BURNED,
 	STATUS_FINISHED
 }	t_status;
+
 /**
-@brief Scheduling policy used to assign dongles.
-*/
+ * @brief Scheduling policy used to assign dongles.
+ */
 typedef enum e_scheduler_type
 {
 	FIFO,
@@ -73,8 +80,8 @@ typedef enum e_scheduler_type
 /* ************************************************************************** */
 
 /**
-@brief Global simulation configuration.
-*/
+ * @brief Compilation request managed by the scheduler.
+ */
 typedef struct s_configuration
 {
 	long long			time_to_burnout;
@@ -90,8 +97,8 @@ typedef struct s_configuration
 }	t_configuration;
 
 /**
-@brief Pending request for a dongle.
-*/
+ * @brief Compilation request managed by the scheduler.
+ */
 typedef struct s_request
 {
 	t_coder		*coder;
@@ -100,6 +107,9 @@ typedef struct s_request
 	size_t		order;
 }	t_request;
 
+/**
+ * @brief Binary heap storing pending compilation requests.
+ */
 typedef struct s_request_heap
 {
 	t_request	*data;
@@ -107,36 +117,43 @@ typedef struct s_request_heap
 	size_t		capacity;
 }	t_request_heap;
 
+/**
+ * @brief Scheduler state and synchronization primitives.
+ */
 typedef struct s_scheduler
 {
 	t_request_heap	request_heap;
 	t_request		*pending;
-	pthread_mutex_t	scheduler_mutex;
-	pthread_cond_t	scheduler_cond;
+	pthread_mutex_t	mutex;
+	pthread_cond_t	cond;
 	pthread_t			thread;
 	int				*reserved;
 	size_t			request_counter;
 }	t_scheduler;
+
 /**
-@brief Global simulation state.
-*/
-typedef struct s_simulation
+ * @brief Dedicated monitoring thread.
+ */
+typedef struct s_monitor
 {
-	t_coder			*coders;
-	t_dongle		*dongles;
-	t_configuration	config;
-	t_scheduler	scheduler;
-	pthread_mutex_t	state_mutex;
-	pthread_mutex_t	print_mutex;
-	long long		start_time;
-	int				termination_flag;
-	int				created_coders;
-
-}	t_simulation;
+	pthread_t		thread;
+}	t_monitor;
 
 /**
-@brief Represents a coder participating in the simulation.
-*/
+ * @brief Shared resource required for compilation.
+ */
+typedef struct s_dongle
+{
+	pthread_mutex_t	mutex;
+	long long		release_time;
+	int				id;
+	int				is_available;
+	int				cooldown_expired_notified;
+}	t_dongle;
+
+/**
+ * @brief Represents a coder participating in the simulation.
+ */
 typedef struct s_coder
 {
 	t_dongle		*left;
@@ -154,25 +171,58 @@ typedef struct s_coder
 }	t_coder;
 
 /**
-@brief Shared resource required by coders.
-*/
-typedef struct s_dongle
+ * @brief Global simulation state.
+ */
+typedef struct s_simulation
 {
-	pthread_mutex_t	mutex;
-	long long		release_time;
-	int				id;
-	int				is_available;
-	int				cooldown_expired_notified;
-}	t_dongle;
-/**
-@brief Dedicated monitoring thread.
-*/
-typedef struct s_monitor
-{
-	t_simulation	*simulation;
-	pthread_t		thread;
-}	t_monitor;
+	t_coder			*coders;
+	t_dongle		*dongles;
+	t_configuration	config;
+	t_scheduler	scheduler;
+	t_monitor		monitor;
+	pthread_mutex_t	state_mutex;
+	pthread_mutex_t	print_mutex;
+	long long		start_time;
+	int				termination_flag;
+	int				created_coders;
 
+}	t_simulation;
+
+/* ************************************************************************** */
+/*                                 Scheduler                                  */
+/* ************************************************************************** */
+
+t_error		scheduler_enqueue(t_coder *coder);
+void			scheduler_run(t_simulation *simulation);
+
+/* ************************************************************************** */
+/*                             Scheduler Heap                                 */
+/* ************************************************************************** */
+
+int				request_has_priority(t_request *a, t_request *b);
+t_request		*heap_peek(t_request_heap *heap);
+t_request		heap_pop(t_request_heap *heap);
+t_error			heap_push(t_request_heap *heap, t_request *request);
+t_error			heap_grow(t_request_heap *heap);
+void			swap(t_request *a, t_request *b);
+
+/* ************************************************************************** */
+/*                              Thread Routines                               */
+/* ************************************************************************** */
+
+void			*scheduler_routine(void *arg);
+void			*monitor_routine(void *arg);
+void			*coder_routine(void *arg);
+
+/* ************************************************************************** */
+/*                                   Coder                                    */
+/* ************************************************************************** */
+
+t_error			init_coders(t_simulation *simulation);
+void			request_compile(t_coder *coder);
+void			compile(t_coder *coder);
+void			debug(t_coder *coder);
+void			refactor(t_coder *coder);
 /* ************************************************************************** */
 /*                              Configuration                                 */
 /* ************************************************************************** */
@@ -189,25 +239,6 @@ void			destroy_simulation(t_simulation *simulation);
 void			set_simulation_finished(t_simulation *simulation);
 int				simulation_finished(t_simulation *simulation);
 t_error	run_app(t_simulation *simulation);
-void		*scheduler_routine(void *arg);
-
-/* ************************************************************************** */
-/*                                  Monitor                                   */
-/* ************************************************************************** */
-
-void			*watch(void *arg);
-
-/* ************************************************************************** */
-/*                                   Coder                                    */
-/* ************************************************************************** */
-
-t_error			init_coders(t_simulation *simulation);
-
-void			*routine(void *arg);
-void			request_compile(t_coder *coder);
-void			compile(t_coder *coder);
-void			debug(t_coder *coder);
-void			refactor(t_coder *coder);
 
 /* ************************************************************************** */
 /*                                  Dongle                                    */
@@ -220,30 +251,17 @@ void			take_dongles(t_coder *coder);
 void			release_dongles(t_coder *coder);
 
 /* ************************************************************************** */
-/*                                 Scheduler                                  */
-/* ************************************************************************** */
-
-int				request_has_priority(t_request *a, t_request *b);
-t_error		scheduler_enqueue(t_coder *coder);
-void			scheduler_run(t_simulation *simulation);
-
-/* ************************************************************************** */
-/*                                  Heap                                      */
-/* ************************************************************************** */
-
-t_request		*heap_peek(t_request_heap *heap);
-t_request		heap_pop(t_request_heap *heap);
-t_error			heap_push(t_request_heap *heap, t_request *request);
-t_error			heap_grow(t_request_heap *heap);
-void			swap(t_request *a, t_request *b);
-
-/* ************************************************************************** */
-/*                                  IO                                     */
+/*                                    Output                                      */
 /* ************************************************************************** */
 
 void			print_error(t_error error);
 void			print_usage(void);
 void			print_status(t_coder *coder, t_status status);
+
+/* ************************************************************************** */
+/*                                Utilities                                   */
+/* ************************************************************************** */
+
 t_error			parse_input(int argc, char **argv);
 long long		get_time_ms(void);
 #endif

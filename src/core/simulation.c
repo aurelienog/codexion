@@ -14,22 +14,22 @@
 
 static t_error	init_mutexes(t_simulation *simulation)
 {
-	if (pthread_cond_init(&simulation->scheduler.scheduler_cond, NULL) != 0)
+	if (pthread_cond_init(&simulation->scheduler.cond, NULL) != 0)
 		return (ERROR_MUTEX);
 	if (pthread_mutex_init(&simulation->state_mutex, NULL) != 0)
 	{
-		pthread_cond_destroy(&simulation->scheduler.scheduler_cond);
+		pthread_cond_destroy(&simulation->scheduler.cond);
 		return (ERROR_MUTEX);
 	}
 	if (pthread_mutex_init(&simulation->print_mutex, NULL) != 0)
 	{
-		pthread_cond_destroy(&simulation->scheduler.scheduler_cond);
+		pthread_cond_destroy(&simulation->scheduler.cond);
 		pthread_mutex_destroy(&simulation->state_mutex);
 		return (ERROR_MUTEX);
 	}
-	if (pthread_mutex_init(&simulation->scheduler.scheduler_mutex, NULL) != 0)
+	if (pthread_mutex_init(&simulation->scheduler.mutex, NULL) != 0)
 	{
-		pthread_cond_destroy(&simulation->scheduler.scheduler_cond);
+		pthread_cond_destroy(&simulation->scheduler.cond);
 		pthread_mutex_destroy(&simulation->print_mutex);
 		pthread_mutex_destroy(&simulation->state_mutex);
 		return (ERROR_MUTEX);
@@ -45,8 +45,8 @@ static void	destroy_mutexes(t_simulation *simulation)
 {
 	pthread_mutex_destroy(&simulation->print_mutex);
 	pthread_mutex_destroy(&simulation->state_mutex);
-	pthread_mutex_destroy(&simulation->scheduler.scheduler_mutex);
-	pthread_cond_destroy(&simulation->scheduler.scheduler_cond);
+	pthread_mutex_destroy(&simulation->scheduler.mutex);
+	pthread_cond_destroy(&simulation->scheduler.cond);
 }
 
 static t_error	init_simulation(t_simulation *simulation)
