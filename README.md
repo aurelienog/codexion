@@ -4,9 +4,9 @@
 
 ## Description
 
-***Codexion*** is a concurrent programming project focused on designing fair and efficient protocols for sharing limited resources between multiple threads.
+***Codexion*** is a concurrent programming project focused on designing and implementing a centralized scheduler that fairly arbitrates access to shared resources among competing threads.
 
-The simulation models a group of coders competing for access to shared dongles required to compile code. Each coder repeatedly:
+The simulation models a group of coders competing for shared dongles required to compile their code. Each coder repeatedly:
 
 1. Requests access to the required dongles.
 2. Compiles.
@@ -17,6 +17,44 @@ If a coder is unable to start a new compilation before reaching its burnout limi
 
 The project explores thread synchronization, resource arbitration, scheduling policies, and deadlock prevention using POSIX threads.
 
+## Design Overview
+
+Instead of allowing coders to compete directly for dongles, all compilation requests are centralized in a dedicated scheduler thread.
+
+The scheduler becomes the single authority responsible for resource allocation, applies the selected scheduling policy (FIFO or EDF), reserves dongles atomically, and grants compilation permissions to eligible coders. This approach simplifies synchronization, prevents deadlocks, and provides a single point for enforcing fairness.
+
+## Request Lifecycle
+
+Each compilation follows the same sequence:
+
+```text
+Coder
+   |
+   | scheduler_enqueue()
+   v
+Global Priority Heap
+   |
+   | Scheduler Thread
+   | (FIFO / EDF)
+   v
+Dongles Available?
+   |
+   +---- No ---> request remains in heap
+   |
+   +---- Yes
+           |
+           v
+Reserve both dongles
+           |
+           v
+Grant permission
+           |
+           v
+Coder compiles
+           |
+           v
+Release dongles
+```
 
 ## Instructions
 
@@ -32,7 +70,7 @@ make
 
 **Example:**
 ```
-./codexion 5 800 200 100 150 3 50 edf
+./codexion 3 800 200 100 150 3 50 edf
 ```
 
 ### Other available rules:
@@ -64,68 +102,58 @@ The simulation ends when:
 ## Architecture
 
 ```text
-                    +------------------+
-                    |     Monitor      |
-                    |------------------|
-                    | check_burnout()  |
-                    | check_completion()|
-                    | check_cooldowns()|
-                    +--------+---------+
-                             |
-                             | pthread_cond_broadcast()
-                             v
+                          +-------------------+
+                          |     Monitor       |
+                          |-------------------|
+                          | check_burnout()   |
+                          | check_completion()|
+                          +--------+----------+
+                                   |
+                                   | stop simulation
+                                   v
 
-+--------------------------------------------------------+
-|                    Scheduler                           |
-|--------------------------------------------------------|
-| scheduler_mutex                                        |
-| scheduler_cond                                         |
-+--------------------------------------------------------+
-
-        ^                                   ^
-        | request_compile()                 |
-        |                                   |
-        |                                   |
-
-+---------------+                 +---------------+
-|   Coder #1    |                 |   Coder #N    |
-|---------------|                 |---------------|
-| compile()     |                 | compile()     |
-| debug()       |                 | debug()       |
-| refactor()    |                 | refactor()    |
-+-------+-------+                 +-------+-------+
-        |                                 |
-        | needs two dongles               |
-        +---------------+----------------+
++-------------------------------------------------------------+
+|                      Scheduler Thread                       |
+|-------------------------------------------------------------|
+| Global request heap (FIFO / EDF)                            |
+| Scheduler mutex                                             |
+| Condition variable                                          |
+| Grants compilation permissions                              |
++---------------------------+---------------------------------+
+                            ^
+                            |
+                  compilation requests
+                            |
+                            |
+        +-------------------+-------------------+
+        |                                       |
++---------------+                       +---------------+
+|   Coder #1    |                       |   Coder #N    |
+|---------------|                       |---------------|
+| request       |                       | request       |
+| wait          |                       | wait          |
+| compile       |                       | compile       |
+| debug         |                       | debug         |
+| refactor      |                       | refactor      |
++-------+-------+                       +-------+-------+
+        |                                       |
+        +---------------+-----------------------+
                         |
                         v
-
-        +-----------------------------+
-        |          Dongles            |
-        |-----------------------------|
-        | mutex                       |
-        | is_available                |
-        | release_time                |
-        | cooldown_expired_notified   |
-        | request_heap                |
-        +-------------+---------------+
-                      |
-                      v
-
-        +-----------------------------+
-        |        Binary Heap          |
-        |-----------------------------|
-        | FIFO -> order               |
-        | EDF  -> deadline            |
-        +-----------------------------+
+                +----------------+
+                |    Dongles     |
+                |----------------|
+                | mutex          |
+                | availability   |
+                | release_time   |
+                +----------------+
 ```
 
 - Coders generate compilation requests.
-- Requests are inserted into the two required dongle queues.
-- Each dongle maintains its own priority heap.
-- The scheduler grants access only when the coder is at the top of both queues.
-- The monitor detects burnout, completion and cooldown expiration.
-- Condition variables are used to put waiting coders to sleep until resources become available.
+- Requests are inserted into a global priority heap.
+- The scheduler grants compilation permissions according to the selected scheduling policy.
+- The monitor detects burnout and completion.
+- Condition variables are used to put waiting coders to sleep until permission to compile is granted.
 
 ## Scheduling Policies
 
@@ -141,26 +169,21 @@ Requests are prioritized according to their burnout deadline.
 
 Priority is determined by: ```request.deadline```
 The request with the earliest deadline is served first.
-EDF reduces starvation and improves survival under heavy contention.
+Under heavy contention, EDF prioritizes coders that are closest to burning out.
 
 ## Request Arbitration
 
-A coder can start compiling only if:
+Coders submit compilation requests to the scheduler, where they are stored in a global priority heap.
+
+During each scheduling cycle, the scheduler evaluates pending requests according to the selected policy (FIFO or EDF). A request is granted only if:
 
 1. Both required dongles are available.
-2. Both dongle cooldowns have expired.
-3. The coder is at the top of both dongle request queues.
+2. Both dongles have completed their cooldown period.
+3. Neither dongle has already been reserved during the current scheduling cycle.
 
-Formally:
-```
-left dongle available
-AND right dongle available
-AND left dongle cooldown expired
-AND right dongle cooldown expired
-AND first in left dongle queue
-AND first in right dongle queue
-```
-This guarantees fair resource acquisition while preventing race conditions.
+Once a request is accepted, the scheduler reserves both dongles and wakes the corresponding coder.
+
+This centralized arbitration guarantees fair resource allocation while preventing race conditions.
 
 ## Blocking cases handled
 
@@ -173,22 +196,22 @@ The coder takes one dongle and eventually burns out.
 
 Dongle mutexes are always acquired in a deterministic order:
 
-- lowest address first
-- highest address second
+- the dongle with the lower memory address
+- the dongle with the higher memory address
 
 This removes circular wait conditions.
 
 ### Resource Contention
 
-Requests are stored in priority queues and resolved by the selected scheduler (FIFO or EDF).
+Compilation requests are stored in a single global priority heap.
+
+During each scheduling cycle, the scheduler evaluates requests in priority order and reserves dongles for accepted coders, preventing multiple coders from acquiring the same dongle simultaneously.
 
 ### Cooldown Synchronization
 
-After a dongle is released, it cannot be reused until its cooldown period expires.
+After a dongle is released, it enters a cooldown period before it can be acquired again.
 
-Coders sleep on a condition variable while waiting.
-
-The monitor wakes all waiting coders when a cooldown expiration becomes available.
+The scheduler checks cooldown expiration during each scheduling cycle and grants permissions only when both required dongles are ready.
 
 ## Thread synchronization mechanisms
 
@@ -204,36 +227,36 @@ Used to protect:
 
 ### Condition Variables
 
-A single scheduler condition variable is used.
+A single scheduler condition variable is shared by all coder threads.
 
-Waiting coders sleep using:
+Coders waiting for permission to compile sleep using:
 ```
 pthread_cond_wait()
 ```
-and are awakened when:
-- A dongle cooldown expires.
-- The simulation terminates.
+
+The scheduler wakes waiting coders whenever compilation permissions are granted or the simulation terminates.
 
 ### Monitor Thread
 
-The monitor executes: ```watch()```
-and periodically checks:
-```
-check_burnout()  
-check_completion()  
-check_cooldowns()
-```
+The monitor thread periodically checks:
+- burnout detection
+- simulation completion detection
 
 ## Data Structures
 
 ### Binary Heap
 
-Each dongle maintains a priority queue implemented as a binary heap.
+The scheduler maintains a single binary heap containing all pending compilation requests.
+
+Priority is determined by the selected scheduling policy:
+
+- FIFO: request arrival order.
+- EDF: earliest burnout deadline.
 
 Operations:
-- heap_push
-- heap_pop
-- heap_peek
+- heap_push()
+- heap_pop()
+- heap_peek()
 
 Complexity:
 - Insertion: O(log n)
@@ -249,6 +272,8 @@ Example:
 0   1 is compiling
 205 1 is debugging
 305 1 is refactoring
+...
+810 3 burned out
 ```
 
 Timestamps are expressed in milliseconds since the beginning of the simulation.
@@ -258,12 +283,13 @@ Timestamps are expressed in milliseconds since the beginning of the simulation.
 - POSIX Threads
 - Mutexes
 - Condition Variables
-- Producer/Consumer Synchronization
-- Deadlock Prevention
 - Race Condition Avoidance
-- Priority Scheduling
-- Binary Heaps
+- Deadlock Prevention
+- Producer/Consumer Synchronization
+- Centralized Scheduling
+- Priority Queue Scheduling
 - Concurrent Resource Arbitration
+- Binary Heaps
 - Monitor Pattern
 
 ## Resources

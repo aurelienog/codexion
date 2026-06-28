@@ -251,7 +251,7 @@ void			take_dongles(t_coder *coder);
 void			release_dongles(t_coder *coder);
 
 /* ************************************************************************** */
-/*                                    Output                                      */
+/*                                    Output                                  */
 /* ************************************************************************** */
 
 void			print_error(t_error error);
