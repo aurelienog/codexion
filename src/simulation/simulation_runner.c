@@ -1,78 +1,36 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   simulation_runner.c                                :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/06/29 10:35:34 by aunoguei          #+#    #+#             */
+/*   Updated: 2026/06/29 10:35:36 by aunoguei         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "codexion.h"
 
-static t_error	start_scheduler(t_simulation *simulation)
+static void	stop_simulation(t_simulation *simulation)
 {
-	if (pthread_create(&simulation->scheduler.thread,
-			NULL,
-			&scheduler_routine,
-			simulation) != 0)
-		return (ERROR_THREAD);
-	return (ERROR_NONE);
+	pthread_mutex_lock(&simulation->state_mutex);
+	simulation->termination_flag = 1;
+	pthread_mutex_unlock(&simulation->state_mutex);
 }
 
-static t_error	join_threads(t_simulation *simulation)
+static void	join_coders(t_simulation *simulation)
 {
-	int				i;
-	t_error			error;
-	t_monitor	*monitor;
-	t_scheduler	*scheduler;
+	size_t	i;
 
-	i = 0;
-	error = ERROR_NONE;
-	monitor = &simulation->monitor;
-	scheduler = &simulation->scheduler;
-
-	if (pthread_join(scheduler->thread, NULL))
-		error = ERROR_THREAD;
-	if (pthread_join(monitor->thread, NULL) != 0)
-		error = ERROR_THREAD;
-	while (i < simulation->created_coders)
-	{
-		if (pthread_join(simulation->coders[i].thread, NULL) != 0)
-			error = ERROR_THREAD;
-		i++;
-	}
-	return (error);
-}
-
-static t_error	start_coders(t_simulation *simulation)
-{
-	int		i;
-
-	i = 0;
-	while (i < simulation->config.number_of_coders)
-	{
-		if (pthread_create(
-				&simulation->coders[i].thread,
-				NULL,
-				&coder_routine,
-				&simulation->coders[i]
-			) != 0)
-		{
-			pthread_mutex_lock(&simulation->state_mutex);
-			simulation->termination_flag = 1;
-			pthread_mutex_unlock(&simulation->state_mutex);
-			while (i > 0)
-				pthread_join(simulation->coders[--i].thread, NULL);
-			return (ERROR_THREAD);
-		}
-		simulation->created_coders++;
-		i++;
-	}
-	return (ERROR_NONE);
-}
-
-static t_error	start_monitor(t_simulation *simulation)
-{
-	if (pthread_create(&simulation->monitor.thread, NULL, &monitor_routine, (void *)simulation) != 0)
-		return (ERROR_THREAD);
-	return (ERROR_NONE);
+	i = simulation->created_coders;
+	while (i > 0)
+		pthread_join(simulation->coders[--i].thread, NULL);
 }
 
 t_error	run_app(t_simulation *simulation)
 {
-	t_error		error;
-	size_t		i;
+	t_error	error;
 
 	error = start_scheduler(simulation);
 	if (error != ERROR_NONE)
@@ -80,21 +38,15 @@ t_error	run_app(t_simulation *simulation)
 	error = start_coders(simulation);
 	if (error != ERROR_NONE)
 	{
-		pthread_mutex_lock(&simulation->state_mutex);
-		simulation->termination_flag = 1;
-		pthread_mutex_unlock(&simulation->state_mutex);
+		stop_simulation(simulation);
 		pthread_join(simulation->scheduler.thread, NULL);
 		return (error);
 	}
 	error = start_monitor(simulation);
 	if (error != ERROR_NONE)
 	{
-		pthread_mutex_lock(&simulation->state_mutex);
-		simulation->termination_flag = 1;
-		pthread_mutex_unlock(&simulation->state_mutex);
-		i = simulation->created_coders;
-		while (i > 0)
-			pthread_join(simulation->coders[--i].thread, NULL);
+		stop_simulation(simulation);
+		join_coders(simulation);
 		return (error);
 	}
 	return (join_threads(simulation));

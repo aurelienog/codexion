@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/15 11:39:55 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/26 12:22:56 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/29 10:23:30 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,6 @@ typedef struct s_monitor		t_monitor;
 /* ************************************************************************** */
 /*                                  Enums                                     */
 /* ************************************************************************** */
-
 /**
  * @brief Error codes returned by the application.
  */
@@ -126,7 +125,7 @@ typedef struct s_scheduler
 	t_request		*pending;
 	pthread_mutex_t	mutex;
 	pthread_cond_t	cond;
-	pthread_t			thread;
+	pthread_t		thread;
 	int				*reserved;
 	size_t			request_counter;
 }	t_scheduler;
@@ -178,7 +177,7 @@ typedef struct s_simulation
 	t_coder			*coders;
 	t_dongle		*dongles;
 	t_configuration	config;
-	t_scheduler	scheduler;
+	t_scheduler		scheduler;
 	t_monitor		monitor;
 	pthread_mutex_t	state_mutex;
 	pthread_mutex_t	print_mutex;
@@ -192,7 +191,7 @@ typedef struct s_simulation
 /*                                 Scheduler                                  */
 /* ************************************************************************** */
 
-t_error		scheduler_enqueue(t_coder *coder);
+t_error			scheduler_enqueue(t_coder *coder);
 void			scheduler_run(t_simulation *simulation);
 
 /* ************************************************************************** */
@@ -207,9 +206,13 @@ t_error			heap_grow(t_request_heap *heap);
 void			swap(t_request *a, t_request *b);
 
 /* ************************************************************************** */
-/*                              Thread Routines                               */
+/*                                 Threads                                    */
 /* ************************************************************************** */
 
+t_error			start_coders(t_simulation *simulation);
+t_error			start_scheduler(t_simulation *simulation);
+t_error			start_monitor(t_simulation *simulation);
+t_error			join_threads(t_simulation *simulation);
 void			*scheduler_routine(void *arg);
 void			*monitor_routine(void *arg);
 void			*coder_routine(void *arg);
@@ -234,11 +237,11 @@ t_configuration	create_config(char **argv);
 /* ************************************************************************** */
 
 t_simulation	*build_simulation(int argc, char **argv, t_error *error);
+t_error			init_simulation(t_simulation *simulation);
 void			destroy_simulation(t_simulation *simulation);
-
 void			set_simulation_finished(t_simulation *simulation);
 int				simulation_finished(t_simulation *simulation);
-t_error	run_app(t_simulation *simulation);
+t_error			run_app(t_simulation *simulation);
 
 /* ************************************************************************** */
 /*                                  Dongle                                    */

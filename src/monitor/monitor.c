@@ -12,6 +12,16 @@
 
 #include "codexion.h"
 
+static void	get_coder_state(t_coder *coder,
+	int *finished,
+	long long *last_compile)
+{
+	pthread_mutex_lock(&coder->mutex);
+	*finished = coder->finished;
+	*last_compile = coder->last_compile_start;
+	pthread_mutex_unlock(&coder->mutex);
+}
+
 static void	check_burnout(t_simulation *simulation)
 {
 	int			i;
@@ -22,10 +32,7 @@ static void	check_burnout(t_simulation *simulation)
 	i = 0;
 	while (i < simulation->config.number_of_coders)
 	{
-		pthread_mutex_lock(&simulation->coders[i].mutex);
-		finished = simulation->coders[i].finished;
-		last_compile = simulation->coders[i].last_compile_start;
-		pthread_mutex_unlock(&simulation->coders[i].mutex);
+		get_coder_state(&simulation->coders[i], &finished, &last_compile);
 		if (finished)
 		{
 			i++;

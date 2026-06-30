@@ -38,8 +38,8 @@ static int	can_schedule(t_coder *coder, int *reserved)
 	is_left_ready = get_time_ms() >= coder->left->release_time + cooldown;
 	is_right_ready = get_time_ms() >= coder->right->release_time + cooldown;
 	if (!coder->left->is_available || !coder->right->is_available
-	|| reserved[left] || reserved[right]
-	|| !is_left_ready || !is_right_ready)
+		|| reserved[left] || reserved[right]
+		|| !is_left_ready || !is_right_ready)
 	{
 		unlock_both_dongles(coder);
 		return (0);
@@ -48,9 +48,10 @@ static int	can_schedule(t_coder *coder, int *reserved)
 	return (1);
 }
 
-static void	process_request(t_simulation *simulation, t_request request, size_t *rejected)
+static void	process_request(t_simulation *simulation,
+	t_request request, size_t *rejected)
 {
-	t_coder	*coder;
+	t_coder			*coder;
 	int				permission;
 
 	coder = request.coder;
@@ -65,32 +66,11 @@ static void	process_request(t_simulation *simulation, t_request request, size_t 
 		simulation->scheduler.pending[(*rejected)++] = request;
 }
 
-t_error	scheduler_enqueue(t_coder *coder)
-{
-	t_request	request;
-	t_simulation		*simulation;
-
-	simulation = coder->simulation;
-	request.coder = coder;
-	request.arrival_time = get_time_ms();
-	pthread_mutex_lock(&coder->mutex);
-	if (coder->waiting_for_compile)
-	{
-		pthread_mutex_unlock(&coder->mutex);
-		return (ERROR_NONE);
-	}
-	coder->waiting_for_compile = 1;
-	request.deadline = coder->last_compile_start + simulation->config.time_to_burnout;
-	pthread_mutex_unlock(&coder->mutex);
-	request.order = simulation->scheduler.request_counter++;
-	return (heap_push(&simulation->scheduler.request_heap, &request));
-}
-
 void	scheduler_run(t_simulation *simulation)
 {
 	t_request_heap	*heap;
-	size_t	rejected_count;
-	size_t	i;
+	size_t			rejected_count;
+	size_t			i;
 
 	heap = &simulation->scheduler.request_heap;
 	memset(simulation->scheduler.reserved, 0,

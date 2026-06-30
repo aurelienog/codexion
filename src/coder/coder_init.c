@@ -6,7 +6,7 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/16 10:46:04 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/26 11:33:47 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/29 09:47:26 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ static t_error	init_coder(t_dongle *left_dongle,
 		size_t i)
 {
 	t_coder	*coder;
+
 	coder = &simulation->coders[i];
 	if (pthread_mutex_init(&coder->mutex, NULL) != 0)
 		return (ERROR_MUTEX);

@@ -6,14 +6,14 @@
 /*   By: aunoguei <aunoguei@student.42urduliz.      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/16 10:51:20 by aunoguei          #+#    #+#             */
-/*   Updated: 2026/06/26 10:51:55 by aunoguei         ###   ########.fr       */
+/*   Updated: 2026/06/29 09:38:46 by aunoguei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
 void	request_compile(t_coder *coder)
-{	
+{
 	t_simulation	*simulation;
 
 	simulation = coder->simulation;

@@ -55,8 +55,6 @@ void	take_dongles(t_coder *coder)
 	lock_both_dongles(coder);
 	coder->left->is_available = 0;
 	coder->right->is_available = 0;
-	print_status(coder, STATUS_TAKE_DONGLE);
-	print_status(coder, STATUS_TAKE_DONGLE);
 	unlock_both_dongles(coder);
 }
 
@@ -74,4 +72,3 @@ void	release_dongles(t_coder *coder)
 	coder->right->release_time = now;
 	unlock_both_dongles(coder);
 }
-
